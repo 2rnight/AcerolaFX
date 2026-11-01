@@ -14,6 +14,12 @@ const LUMINANCE_G = 0.7152;
 const LUMINANCE_B = 0.0722;
 const PI = Math.PI;
 
+// The source shader stores rasterized glyphs in fillASCII.png rather than a
+// literal string. Its last 8x8 cell is a fully filled bitmap. For a textual
+// browser rendering we intentionally use @ as the densest character, which is
+// the conventional ASCII equivalent requested by the web version.
+const ASCII_FILL_CHARACTERS = ' .:-=+*#%@';
+
 const DEFAULT_OPTIONS = {
   // The source shader renders one character for every 8x8 pixel tile.
   columns: 96,
@@ -45,7 +51,7 @@ const DEFAULT_OPTIONS = {
 
   // The two LUTs in the original shader contain ten fill cells and four
   // directional edge cells. Text output needs a character equivalent.
-  fillCharacters: ' .:-=+*#%@',
+  fillCharacters: ASCII_FILL_CHARACTERS,
   edgeCharacters: '|-/\\',
 };
 
@@ -449,4 +455,4 @@ export class AcerolaAsciiRenderer {
   }
 }
 
-export { DEFAULT_OPTIONS, classifyDirection };
+export { ASCII_FILL_CHARACTERS, DEFAULT_OPTIONS, classifyDirection };
