@@ -15,10 +15,10 @@ const LUMINANCE_B = 0.0722;
 const PI = Math.PI;
 
 // The source shader stores rasterized glyphs in fillASCII.png rather than a
-// literal string. Its last 8x8 cell is a fully filled bitmap. For a textual
-// browser rendering we intentionally use @ as the densest character, which is
-// the conventional ASCII equivalent requested by the web version.
-const ASCII_FILL_CHARACTERS = ' .:-=+*#%@';
+// literal string. Its last 8x8 cell is a fully filled bitmap. The web text
+// renderer uses the requested density ramp; the final @ is followed by a
+// solid-square glyph for the highest level.
+const ASCII_FILL_CHARACTERS = ' .iCOP0?@■';
 
 const DEFAULT_OPTIONS = {
   // The source shader renders one character for every 8x8 pixel tile.
@@ -26,10 +26,11 @@ const DEFAULT_OPTIONS = {
   tileSize: TILE_SIZE,
 
   // These values only affect the canvas text rasterization, not sampling.
-  fontSize: 15,
+  // Silkscreen is designed as an 8px bitmap font; 16px keeps a crisp 2x grid.
+  fontSize: 16,
   lineHeight: 1,
   fontFamily:
-    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+    '"Silkscreen", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
 
   drawEdges: true,
   drawFill: true,
@@ -144,6 +145,21 @@ function directionFromBuckets(buckets, threshold) {
 function getCharacter(characters, index, fallback = ' ') {
   if (typeof characters !== 'string' || characters.length === 0) return fallback;
   return characters[index] || characters[characters.length - 1] || fallback;
+}
+
+function drawCharacter(context, character, x, y, cellWidth, cellHeight) {
+  if (character === '■') {
+    // Silkscreen intentionally does not contain U+25A0. Draw the final LUT
+    // cell ourselves so it remains a crisp, square block rather than falling
+    // back to a proportional system glyph.
+    const size = Math.max(1, Math.floor(Math.min(cellWidth, cellHeight) * 0.75));
+    const offsetX = Math.floor((cellWidth - size) / 2);
+    const offsetY = Math.floor((cellHeight - size) / 2);
+    context.fillRect(x + offsetX, y + offsetY, size, size);
+    return;
+  }
+
+  context.fillText(character, x, y);
 }
 
 /**
@@ -443,7 +459,14 @@ export class AcerolaAsciiRenderer {
             asciiRgb[2] * (1 - blend) + sourceRgb[2] * blend,
           ];
           context.fillStyle = blend > 0 ? rgbToCss(color) : options.asciiColor;
-          context.fillText(character, column * cellWidth, row * cellHeight);
+          drawCharacter(
+            context,
+            character,
+            column * cellWidth,
+            row * cellHeight,
+            cellWidth,
+            cellHeight,
+          );
         }
       }
 

@@ -48,6 +48,10 @@ The renderer also accepts an `HTMLVideoElement`, `HTMLCanvasElement`, or
 `ImageBitmap`. Change controls while it is running with
 `renderer.setOptions({ exposure: 1.5, drawEdges: false })`.
 
+The demo bundles the pixel-style Silkscreen font under its OFL license. The
+fill ramp is ` .iCOP0?@■`; the final `■` is drawn as a square by the renderer
+because the bundled font does not provide the block glyph.
+
 For accessibility or a DOM `<pre>` fallback, the latest character frame is
 available as `renderer.text`. Canvas is used for the normal display because
 thousands of DOM nodes are not a good animation primitive.
