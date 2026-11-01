@@ -140,9 +140,9 @@
           <div class="control-group">
             <h2>Preprocess</h2>
             <label for="columns">character columns <output id="columns-value"></output></label>
-            <input id="columns" type="range" min="40" max="180" step="1" value="96" />
+            <input id="columns" type="range" min="40" max="180" step="1" value="120" />
             <label for="edge-threshold">edge tile threshold <output id="edge-threshold-value"></output></label>
-            <input id="edge-threshold" type="range" min="0" max="32" step="1" value="8" />
+            <input id="edge-threshold" type="range" min="0" max="32" step="1" value="12" />
             <label for="edge-sensitivity">gradient sensitivity <output id="edge-sensitivity-value"></output></label>
             <input id="edge-sensitivity" type="range" min="0.01" max="0.3" step="0.005" value="0.095" />
           </div>
@@ -150,11 +150,11 @@
           <div class="control-group">
             <h2>Character</h2>
             <label for="exposure">luminance exposure <output id="exposure-value"></output></label>
-            <input id="exposure" type="range" min="0" max="3" step="0.01" value="1" />
+            <input id="exposure" type="range" min="0" max="3" step="0.01" value="1.78" />
             <label for="attenuation">luminance attenuation <output id="attenuation-value"></output></label>
-            <input id="attenuation" type="range" min="0.2" max="3" step="0.01" value="1" />
+            <input id="attenuation" type="range" min="0.2" max="3" step="0.001" value="2.712" />
             <label for="shimmer">static shimmer <output id="shimmer-value"></output></label>
-            <input id="shimmer" type="range" min="0" max="0.08" step="0.001" value="0.018" />
+            <input id="shimmer" type="range" min="0" max="0.08" step="0.001" value="0" />
             <label class="check-row"><input id="draw-edges" type="checkbox" checked /> draw edge glyphs</label>
             <label class="check-row"><input id="draw-fill" type="checkbox" checked /> draw fill glyphs</label>
             <label class="check-row"><input id="invert" type="checkbox" /> invert luminance</label>
@@ -180,12 +180,14 @@
       const pauseButton = document.querySelector('#pause');
       const fileInput = document.querySelector('#source-file');
       const renderer = new AcerolaAsciiRenderer(canvas, {
-        columns: 96,
-        edgeThreshold: 8,
+        columns: 120,
+        edgeThreshold: 12,
         edgeSensitivity: 0.095,
-        exposure: 1,
-        attenuation: 1,
-        shimmer: 0.018,
+        exposure: 1.78,
+        attenuation: 2.712,
+        shimmer: 0,
+        // Keep the demo's existing colors; only the non-color defaults are
+        // overridden by the Crimewave-inspired settings.
         asciiColor: '#9dffd0',
         backgroundColor: '#06110c',
       });
