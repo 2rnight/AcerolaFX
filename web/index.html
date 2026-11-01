@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AcerolaFX ASCII / browser extraction</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #040806;
+        --panel: rgba(8, 20, 14, 0.86);
+        --line: rgba(157, 255, 208, 0.18);
+        --text: #e5fff1;
+        --muted: #83ae98;
+        --accent: #9dffd0;
+        --accent-strong: #4dffae;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 0%, rgba(40, 139, 93, 0.19), transparent 32rem),
+          radial-gradient(circle at 90% 100%, rgba(20, 88, 64, 0.16), transparent 36rem),
+          var(--bg);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main { width: min(1440px, 100%); margin: 0 auto; padding: 32px 22px 48px; }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        color: var(--accent);
+        font: 700 clamp(1.35rem, 3vw, 2.35rem)/1.05 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .subtitle { max-width: 680px; margin: 0; color: var(--muted); line-height: 1.55; }
+      .tag { color: var(--accent-strong); font: 0.75rem ui-monospace, monospace; letter-spacing: 0.15em; white-space: nowrap; }
+
+      .layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 18px; align-items: start; }
+      .panel { border: 1px solid var(--line); background: var(--panel); box-shadow: 0 18px 70px rgba(0, 0, 0, 0.27); }
+
+      .screen { position: relative; min-width: 0; overflow: hidden; padding: 13px; }
+      .screen::after {
+        position: absolute;
+        inset: 13px;
+        pointer-events: none;
+        content: "";
+        background: repeating-linear-gradient(to bottom, transparent 0 5px, rgba(157, 255, 208, 0.035) 6px 7px);
+        mix-blend-mode: screen;
+      }
+
+      #ascii-canvas { display: block; width: 100%; height: auto; background: #06110c; }
+      .screen-label { display: flex; justify-content: space-between; margin-top: 10px; color: var(--muted); font: 0.72rem ui-monospace, monospace; }
+
+      aside { padding: 17px; }
+      .control-group + .control-group { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+      h2 { margin: 0 0 13px; color: var(--accent); font: 0.78rem ui-monospace, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
+      label { display: flex; justify-content: space-between; gap: 12px; margin: 11px 0 7px; color: var(--muted); font-size: 0.82rem; }
+      output { color: var(--text); font: 0.78rem ui-monospace, monospace; }
+      input[type="range"] { width: 100%; accent-color: var(--accent-strong); }
+      input[type="color"] { width: 39px; height: 24px; padding: 1px; border: 1px solid var(--line); background: transparent; }
+      .color-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; }
+      .check-row { display: flex; align-items: center; justify-content: start; gap: 9px; margin: 10px 0; color: var(--text); font-size: 0.82rem; }
+      .check-row input { accent-color: var(--accent-strong); }
+
+      button, .file-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border: 1px solid rgba(157, 255, 208, 0.35);
+        color: var(--text);
+        background: rgba(77, 255, 174, 0.08);
+        font: 0.75rem ui-monospace, monospace;
+        cursor: pointer;
+      }
+      button:hover, .file-button:hover { border-color: var(--accent); background: rgba(77, 255, 174, 0.16); }
+      .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      input[type="file"] { display: none; }
+      .file-button { width: 100%; }
+      .hint { margin: 12px 0 0; color: var(--muted); font-size: 0.75rem; line-height: 1.5; }
+      code { color: var(--accent); font-family: ui-monospace, monospace; }
+
+      @media (max-width: 860px) {
+        header { display: block; }
+        .tag { display: block; margin-top: 16px; }
+        .layout { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>ASCII // AcerolaFX extraction</h1>
+          <p class="subtitle">把原 shader 的 8×8 tile、亮度量化和边缘方向投票带到浏览器。选择图片或视频，观察每一帧如何被重绘成字符。</p>
+        </div>
+        <div class="tag">LUMINANCE / SOBEL / TILE VOTE</div>
+      </header>
+
+      <div class="layout">
+        <section class="panel screen" aria-label="ASCII preview">
+          <canvas id="ascii-canvas"></canvas>
+          <div class="screen-label"><span id="source-label">source: Textures/example.png</span><span id="status">loading…</span></div>
+        </section>
+
+        <aside class="panel">
+          <div class="control-group">
+            <h2>Source</h2>
+            <label class="file-button" for="source-file">LOAD IMAGE / VIDEO</label>
+            <input id="source-file" type="file" accept="image/*,video/*" />
+            <div class="button-row" style="margin-top: 9px">
+              <button id="pause" type="button">PAUSE</button>
+              <button id="reset" type="button">RESET</button>
+            </div>
+            <p class="hint">视频会随 <code>requestAnimationFrame</code> 更新；静态图默认启用非常轻的 shimmer，仅用于展示动画效果。</p>
+          </div>
+
+          <div class="control-group">
+            <h2>Preprocess</h2>
+            <label for="columns">character columns <output id="columns-value"></output></label>
+            <input id="columns" type="range" min="40" max="180" step="1" value="96" />
+            <label for="edge-threshold">edge tile threshold <output id="edge-threshold-value"></output></label>
+            <input id="edge-threshold" type="range" min="0" max="32" step="1" value="8" />
+            <label for="edge-sensitivity">gradient sensitivity <output id="edge-sensitivity-value"></output></label>
+            <input id="edge-sensitivity" type="range" min="0.01" max="0.3" step="0.005" value="0.095" />
+          </div>
+
+          <div class="control-group">
+            <h2>Character</h2>
+            <label for="exposure">luminance exposure <output id="exposure-value"></output></label>
+            <input id="exposure" type="range" min="0" max="3" step="0.01" value="1" />
+            <label for="attenuation">luminance attenuation <output id="attenuation-value"></output></label>
+            <input id="attenuation" type="range" min="0.2" max="3" step="0.01" value="1" />
+            <label for="shimmer">static shimmer <output id="shimmer-value"></output></label>
+            <input id="shimmer" type="range" min="0" max="0.08" step="0.001" value="0.018" />
+            <label class="check-row"><input id="draw-edges" type="checkbox" checked /> draw edge glyphs</label>
+            <label class="check-row"><input id="draw-fill" type="checkbox" checked /> draw fill glyphs</label>
+            <label class="check-row"><input id="invert" type="checkbox" /> invert luminance</label>
+          </div>
+
+          <div class="control-group">
+            <h2>Color</h2>
+            <div class="color-row"><label for="ascii-color">ascii color</label><input id="ascii-color" type="color" value="#9dffd0" /></div>
+            <div class="color-row"><label for="background-color">background</label><input id="background-color" type="color" value="#06110c" /></div>
+            <label for="blend">base color blend <output id="blend-value"></output></label>
+            <input id="blend" type="range" min="0" max="1" step="0.01" value="0" />
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <script type="module">
+      import { AcerolaAsciiRenderer } from './ascii-renderer.js';
+
+      const canvas = document.querySelector('#ascii-canvas');
+      const status = document.querySelector('#status');
+      const sourceLabel = document.querySelector('#source-label');
+      const pauseButton = document.querySelector('#pause');
+      const fileInput = document.querySelector('#source-file');
+      const renderer = new AcerolaAsciiRenderer(canvas, {
+        columns: 96,
+        edgeThreshold: 8,
+        edgeSensitivity: 0.095,
+        exposure: 1,
+        attenuation: 1,
+        shimmer: 0.018,
+        asciiColor: '#9dffd0',
+        backgroundColor: '#06110c',
+      });
+
+      const defaultImage = new Image();
+      let activeSource = defaultImage;
+      let objectUrl = null;
+      let isPaused = false;
+
+      const controls = {
+        columns: { element: document.querySelector('#columns'), output: document.querySelector('#columns-value'), key: 'columns' },
+        edgeThreshold: { element: document.querySelector('#edge-threshold'), output: document.querySelector('#edge-threshold-value'), key: 'edgeThreshold' },
+        edgeSensitivity: { element: document.querySelector('#edge-sensitivity'), output: document.querySelector('#edge-sensitivity-value'), key: 'edgeSensitivity' },
+        exposure: { element: document.querySelector('#exposure'), output: document.querySelector('#exposure-value'), key: 'exposure' },
+        attenuation: { element: document.querySelector('#attenuation'), output: document.querySelector('#attenuation-value'), key: 'attenuation' },
+        shimmer: { element: document.querySelector('#shimmer'), output: document.querySelector('#shimmer-value'), key: 'shimmer' },
+        blendWithSource: { element: document.querySelector('#blend'), output: document.querySelector('#blend-value'), key: 'blendWithSource' },
+      };
+
+      function updateOptions() {
+        const next = {};
+        for (const control of Object.values(controls)) {
+          next[control.key] = Number(control.element.value);
+          control.output.value = control.element.value;
+        }
+        next.drawEdges = document.querySelector('#draw-edges').checked;
+        next.drawFill = document.querySelector('#draw-fill').checked;
+        next.invertLuminance = document.querySelector('#invert').checked;
+        next.asciiColor = document.querySelector('#ascii-color').value;
+        next.backgroundColor = document.querySelector('#background-color').value;
+        renderer.setOptions(next);
+      }
+
+      for (const control of Object.values(controls)) control.element.addEventListener('input', updateOptions);
+      for (const selector of ['#draw-edges', '#draw-fill', '#invert', '#ascii-color', '#background-color']) {
+        document.querySelector(selector).addEventListener('input', updateOptions);
+      }
+
+      function playSource(source, label) {
+        activeSource = source;
+        sourceLabel.textContent = `source: ${label}`;
+        isPaused = false;
+        pauseButton.textContent = 'PAUSE';
+        renderer.start(source);
+      }
+
+      defaultImage.onload = () => {
+        status.textContent = 'running';
+        playSource(defaultImage, 'Textures/example.png');
+      };
+      defaultImage.onerror = () => { status.textContent = 'default image unavailable'; };
+      defaultImage.src = '../Textures/example.png';
+
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+
+        if (file.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.muted = true;
+          video.loop = true;
+          video.playsInline = true;
+          video.addEventListener('loadeddata', () => {
+            status.textContent = 'video running';
+            video.play();
+            playSource(video, file.name);
+          }, { once: true });
+          video.addEventListener('error', () => { status.textContent = 'video could not load'; }, { once: true });
+          video.src = objectUrl;
+          return;
+        }
+
+        const image = new Image();
+        image.onload = () => {
+          status.textContent = 'running';
+          playSource(image, file.name);
+        };
+        image.onerror = () => { status.textContent = 'image could not load'; };
+        image.src = objectUrl;
+      });
+
+      pauseButton.addEventListener('click', () => {
+        if (isPaused) {
+          renderer.start(activeSource);
+          pauseButton.textContent = 'PAUSE';
+        } else {
+          renderer.stop();
+          pauseButton.textContent = 'RESUME';
+        }
+        isPaused = !isPaused;
+      });
+
+      document.querySelector('#reset').addEventListener('click', () => {
+        for (const control of Object.values(controls)) {
+          control.element.value = control.element.defaultValue;
+        }
+        document.querySelector('#draw-edges').checked = true;
+        document.querySelector('#draw-fill').checked = true;
+        document.querySelector('#invert').checked = false;
+        document.querySelector('#ascii-color').value = '#9dffd0';
+        document.querySelector('#background-color').value = '#06110c';
+        updateOptions();
+      });
+
+      updateOptions();
+    </script>
+  </body>
+</html>

@@ -18,6 +18,10 @@ For an album of gpose shader comparisons please look [here](https://imgsli.com/M
 ![example4](./Examples/example6.png) <br>
 ![example4](./Examples/example7.png)
 
+### Browser ASCII extraction
+
+The ASCII effect has a dependency-free browser extraction and demo in [`web/`](./web/). See [`ASCII_WEB_EXTRACTION.md`](./ASCII_WEB_EXTRACTION.md) for the pass-by-pass analysis and the limitations of using image/video pixels without a game depth buffer.
+
 ### Credits
 
 Big thank you to [Aki Saeri](https://twitter.com/AkiSaeri), the ultimate Final Fantasy XIV gamer, for beta testing the shaders.
